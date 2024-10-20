@@ -80,6 +80,29 @@ async function createApp(dbPath) {
   });
 
   /**
+ * Get a list of butterflies rated by a user
+ * GET /users/:userId/rated-butterflies
+ */
+app.get('/users/:userId/rated-butterflies', async (req, res) => {
+  const { userId } = req.params;
+
+  // Retrieve all butterflies
+  const butterflies = await db.get('butterflies').value();
+
+  // Filter and map to get rated butterflies
+  const ratedButterflies = butterflies
+    .map(butterfly => {
+      const userRating = butterfly.ratings?.find(r => r.userId === userId);
+      return userRating ? { id: butterfly.id, name: butterfly.name, rating: userRating.rating } : null;
+    })
+    .filter(butterfly => butterfly !== null) // Remove null entries
+    .sort((a, b) => b.rating - a.rating); // Sort by rating in descending order
+
+  res.json(ratedButterflies);
+});
+
+
+  /**
    * Allow a user to rate butterflies on a scale of 0 through 5
    * POST /butterflies/:id/rate
    * Body: {"userId": string, "rating": number} - Rating must be between 0 - 5
