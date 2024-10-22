@@ -60,6 +60,12 @@ Clear Communication: the response clearly communicates the result of the user's 
 # Summary
 This implementa ensures that when a user rates a butterfly, they only receive information relevant to their action, maintaining the integrity of user privacy. 
 
+# Explanation of the Tests
+Success - New Rating: Tests that a new rating can be added successfully.
+Success - Update Existing Rating: Tests that an existing rating can be updated without creating a new entry.
+Error - Invalid Rating Value: Ensures that ratings outside the range (0 to 5) return a validation error.
+Error - User Not Found: Checks that if the user ID does not exist in the database, the endpoint returns an error.
+Error - Butterfly Not Found: Tests that an attempt to rate a non-existing butterfly returns a not-found error.
 
 METODD: GET
 Endpoint: `/users/:userId/rated-butterflies`

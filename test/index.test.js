@@ -160,6 +160,108 @@ describe('GET user', () => {
   });
 });
 
+describe('PUT butterfly rating', () => {
+  it('success - new rating', async () => {
+    const response = await request(app)
+      .put('/butterflies/wxyz9876/rate')
+      .send({
+        userId: 'abcd1234', // Existing user
+        rating: 5
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      message: 'Rating added/updated successfully',
+      rating: {
+        userId: 'abcd1234',
+        rating: 5
+      }
+    });
+
+    // Verify the updated rating
+    const updatedButterfly = await request(app).get('/butterflies/wxyz9876');
+    expect(updatedButterfly.body.ratings).toEqual([
+      { userId: 'abcd1234', rating: 5 }
+    ]);
+  });
+
+  it('success - update existing rating', async () => {
+    // First, create an initial rating
+    await request(app)
+      .put('/butterflies/wxyz9876/rate')
+      .send({
+        userId: 'abcd1234',
+        rating: 3
+      });
+
+    // Now update the rating
+    const response = await request(app)
+      .put('/butterflies/wxyz9876/rate')
+      .send({
+        userId: 'abcd1234',
+        rating: 4
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      message: 'Rating added/updated successfully',
+      rating: {
+        userId: 'abcd1234',
+        rating: 4
+      }
+    });
+
+    // Verify the updated rating
+    const updatedButterfly = await request(app).get('/butterflies/wxyz9876');
+    expect(updatedButterfly.body.ratings).toEqual([
+      { userId: 'abcd1234', rating: 4 }
+    ]);
+  });
+
+  it('error - invalid rating value', async () => {
+    const response = await request(app)
+      .put('/butterflies/wxyz9876/rate')
+      .send({
+        userId: 'abcd1234',
+        rating: 6 // Invalid rating (above 5)
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      error: 'Rating must be a number between 0 and 5'
+    });
+  });
+
+  it('error - user not found', async () => {
+    const response = await request(app)
+      .put('/butterflies/wxyz9876/rate')
+      .send({
+        userId: 'nonexistent-user', // Non-existing user
+        rating: 4
+      });
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({
+      error: 'Butterfly not found'
+    });
+  });
+
+  it('error - butterfly not found', async () => {
+    const response = await request(app)
+      .put('/butterflies/bad-id/rate')
+      .send({
+        userId: 'abcd1234',
+        rating: 5
+      });
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({
+      error: 'Butterfly not found'
+    });
+  });
+});
+
+
 describe('POST user', () => {
   it('success', async () => {
     nanoid.mockReturnValue('new-user-id');
