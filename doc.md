@@ -1,6 +1,6 @@
 To allows users to rate butterflies on a scale between 0 and 5, I'll need to create a new endpoint. Below is an implementation that includes the Http method, endpoint, parameters, types, and the context for the new endpoint.
 
-Method: POST
+Method: PUT
 Endpoint: `/butterflies/:id/rate`
 Parameters:
 - id (path parameter): The ID of the butterfly to rate
@@ -13,9 +13,23 @@ Parameters:
         type: integer
         required: true
 
-# Why use POST?
-- *Create or Update* `POST` is used when creating a new resource or updating an existing one. In the context of ratings, we want to create a rating or update an existing one for a butterfly.
-- *Non-idempotent Operation* - `POST` is non-idempotent, meaning that calling the same endpoint multiple times with the same data can have different effects. This aligns with the idea of creating or updating ratings.
+Response Codes:
+- 200 OK: If the rating is updated successfully.
+- 201 Created: If a new rating is created.
+- 400 Bad Request: If the request is invalid (e.g., invalid rating value).
+- 404 Not Found: If the specified butterfly does not exist.
+
+
+# Why update a user's rating instead of creating new one?
+If a user has many ratings, the retrieval and sorting operations may take longer. This can lead to increased latency in response times. it is unlikely a user wants to retrieve their non-recent ratings.
+
+# Why use PUT?
+The PUT method is specifically designed to update an existing resource. In this case, since a user can only have one rating per butterfly, the user’s rating effectively represents an existing resource that needs to be updated if it already exists.
+
+PUT requests are idempotent, meaning that making the same request multiple times will result in the same state. This is useful for updating a user's rating—if the user rates a butterfly again, the PUT request will simply update the existing rating rather than creating a duplicate.
+
+`POST` is used when creating a new entire resource. If a user already has a rating, using POST for updating a rating can be misleading since `POST` is typically associated with creating a resource. This could cause confusion, especially if users expect a `POST` request to only create things rather than update them.
+`PATCH` is used we want to update specific fields of a resource. Since the only fields that we can update is rating, there is no need for `PATCH`.
 
 ## Handling Multiple ratings
 Update existing rating - If the user has already rated the butterfly, the system should update their existing rating rather than create a new one. This prevents multiple entries for the same user and butterfly.

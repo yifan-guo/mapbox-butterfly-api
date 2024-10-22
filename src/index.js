@@ -80,7 +80,7 @@ async function createApp(dbPath) {
   });
 
   /**
- * Get a list of butterflies rated by a user
+ * Get a list of a user's rated butterflies, sorted by rating
  * GET /users/:userId/rated-butterflies
  */
 app.get('/users/:userId/rated-butterflies', async (req, res) => {
@@ -104,10 +104,10 @@ app.get('/users/:userId/rated-butterflies', async (req, res) => {
 
   /**
    * Allow a user to rate butterflies on a scale of 0 through 5
-   * POST /butterflies/:id/rate
+   * PUT /butterflies/:id/rate
    * Body: {"userId": string, "rating": number} - Rating must be between 0 - 5
    */
-  app.post('/butterflies/:id/rate', async (req, res) => {
+  app.put('/butterflies/:id/rate', async (req, res) => {
       const { id } = req.params;
       const {userId, rating } = req.body;
 
