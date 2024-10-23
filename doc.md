@@ -92,3 +92,17 @@ When a user requests their rated buterflies, omitting other users' ratings
 
 # Benefits
 Privacy: Only the requesting user's rating is visible, which respects user privacy and data security
+
+# Explanation of the Tests
+Success - Retrieve User Ratings:
+
+This test checks that a valid user can retrieve their rating for a specific butterfly successfully.
+Error - User Has Not Rated Any Butterflies:
+
+This test verifies that if a user who has not rated the butterfly tries to access their rating, a 404 error is returned with an appropriate message.
+Error - Butterfly Not Found:
+
+This checks that if a non-existent butterfly ID is requested, a 404 error is returned.
+Error - User Not Found:
+
+This ensures that if a user ID does not exist, the endpoint returns a 404 error indicating that the user was not found.

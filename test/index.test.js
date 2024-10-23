@@ -160,6 +160,80 @@ describe('GET user', () => {
   });
 });
 
+describe('GET user ratings for butterflies', () => {
+  beforeEach(async () => {
+    // Reset the database to a known state before each test
+    await db.setState({
+      butterflies: [
+        {
+          id: 'wxyz9876',
+          commonName: 'test-butterfly',
+          species: 'Testium butterflius',
+          article: 'https://example.com/testium_butterflius',
+          ratings: [
+            { userId: 'abcd1234', rating: 4 },
+            { userId: 'user2', rating: 5 }
+          ]
+        }
+      ],
+      users: [
+        {
+          id: 'abcd1234',
+          username: 'test-user'
+        },
+        {
+          id: 'user2',
+          username: 'another-user'
+        }
+      ]
+    }).write();
+  });
+
+  it('success - retrieve user ratings', async () => {
+    const response = await request(app)
+      .get('/butterflies/wxyz9876/rate?userId=abcd1234');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      userId: 'abcd1234',
+      ratings: [
+        { butterflyId: 'wxyz9876', rating: 4 }
+      ]
+    });
+  });
+
+  it('error - user has not rated any butterflies', async () => {
+    const response = await request(app)
+      .get('/butterflies/wxyz9876/rate?userId=user2'); // User2 has not rated this butterfly
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({
+      error: 'No ratings found for this user'
+    });
+  });
+
+  it('error - butterfly not found', async () => {
+    const response = await request(app)
+      .get('/butterflies/bad-id/rate?userId=abcd1234');
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({
+      error: 'Butterfly not found'
+    });
+  });
+
+  it('error - user not found', async () => {
+    const response = await request(app)
+      .get('/butterflies/wxyz9876/rate?userId=nonexistent-user');
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({
+      error: 'User not found'
+    });
+  });
+});
+
+
 describe('PUT butterfly rating', () => {
   it('success - new rating', async () => {
     const response = await request(app)
