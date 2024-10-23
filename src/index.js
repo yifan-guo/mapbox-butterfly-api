@@ -93,7 +93,7 @@ app.get('/users/:userId/rated-butterflies', async (req, res) => {
   const ratedButterflies = butterflies
     .map(butterfly => {
       const userRating = butterfly.ratings?.find(r => r.userId === userId);
-      return userRating ? { id: butterfly.id, name: butterfly.name, rating: userRating.rating } : null;
+      return userRating ? { id: butterfly.id, name: butterfly.commonName, rating: userRating.rating } : null;
     })
     .filter(butterfly => butterfly !== null) // Remove null entries
     .sort((a, b) => b.rating - a.rating); // Sort by rating in descending order
@@ -112,7 +112,7 @@ app.get('/users/:userId/rated-butterflies', async (req, res) => {
       const {userId, rating } = req.body;
 
       // validate the rating
-      if (rating !== 'number' || rating <0 || rating > 5){
+      if (typeof rating !== 'number' || rating <0 || rating > 5){
         return res.status(400).json({'error': 'Rating must be between 0 and 5'});
       }
 
@@ -131,8 +131,8 @@ app.get('/users/:userId/rated-butterflies', async (req, res) => {
       // check if the user already rated the butterfly
       const existingRatingIndex = butterfly.ratings.findIndex(r => r.userId == userId);
       if (existingRatingIndex !== -1) {
-        // updat ethe existing rating
-        butterfly.ratings[existingRatingIndex] = rating;  
+        // update the existing rating
+        butterfly.ratings[existingRatingIndex].rating = rating;  
       } else {
         // insert the new rating tied to the user ID
         butterfly.ratings.push({ userId, rating});
