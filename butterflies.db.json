@@ -10,7 +10,13 @@
       "id": "H7hhcEWLDsxyHN0cnDrBV",
       "commonName": "Plum Judy",
       "species": "Abisara echerius",
-      "article": "https://en.wikipedia.org/wiki/Abisara_echerius"
+      "article": "https://en.wikipedia.org/wiki/Abisara_echerius",
+      "ratings": [
+        {
+          "userId": "-9aAFuyNIkpSzRMNux2BQ",
+          "rating": 2
+        }
+      ]
     },
     {
       "id": "VJ5v4ZEQVL92XaaSl7xgD",

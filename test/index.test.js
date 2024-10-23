@@ -11,26 +11,53 @@ jest.mock('nanoid');
 const createApp = require('../src/index');
 
 let app;
+let db;  // Declare the db variable here
 
 beforeAll(async () => {
   // Create a test database
   const testDbPath = path.join(__dirname, 'test.db.json');
-  const db = await lowdb(new FileAsync(testDbPath));
+  db = await lowdb(new FileAsync(testDbPath));  // Assign the db instance
 
   // Fill the test database with data
   await db.setState({
     butterflies: [
       {
+        id: 'butterfly1',
+        commonName: 'Butterfly One',
+        species: 'Species One',
+        article: 'https://example.com/butterfly1',
+        ratings: [
+          { userId: 'abcd1234', rating: 5 },
+          { userId: 'user2', rating: 3 }
+        ]
+      },
+      {
+        id: 'butterfly2',
+        commonName: 'Butterfly Two',
+        species: 'Species Two',
+        article: 'https://example.com/butterfly2',
+        ratings: [
+          { userId: 'abcd1234', rating: 4 }
+        ]
+      },
+      {
         id: 'wxyz9876',
         commonName: 'test-butterfly',
         species: 'Testium butterflius',
-        article: 'https://example.com/testium_butterflius'
+        article: 'https://example.com/testium_butterflius',
+        ratings: [
+          { userId: 'abcd1234', rating: 4 }
+        ]
       }
     ],
     users: [
       {
         id: 'abcd1234',
         username: 'test-user'
+      },
+      {
+        id: 'user2',
+        username: 'another-user'
       }
     ]
   }).write();
@@ -59,7 +86,10 @@ describe('GET butterfly', () => {
       id: 'wxyz9876',
       commonName: 'test-butterfly',
       species: 'Testium butterflius',
-      article: 'https://example.com/testium_butterflius'
+      article: 'https://example.com/testium_butterflius',
+      ratings: [
+        { 'userId': 'abcd1234', 'rating': 4 }
+      ]
     });
   });
 
@@ -160,7 +190,97 @@ describe('GET user', () => {
   });
 });
 
-describe('GET user ratings for butterflies', () => {
+beforeAll(async () => {
+  // Create a test database
+  const testDbPath = path.join(__dirname, 'test.db.json');
+  db = await lowdb(new FileAsync(testDbPath));  // Assign the db instance
+
+  // Fill the test database with data
+  await db.setState({
+    butterflies: [
+      {
+        id: 'wxyz9876',
+        commonName: 'test-butterfly',
+        species: 'Testium butterflius',
+        article: 'https://example.com/testium_butterflius',
+        ratings: [
+          { userId: 'abcd1234', rating: 4 }
+        ]
+      },
+      {
+        id: 'butterfly1',
+        commonName: 'Butterfly One',
+        species: 'Species One',
+        article: 'https://example.com/butterfly1',
+        ratings: [
+          { userId: 'abcd1234', rating: 5 }
+        ]
+      },
+      {
+        id: 'butterfly2',
+        commonName: 'Butterfly Two',
+        species: 'Species Two',
+        article: 'https://example.com/butterfly2',
+        ratings: [
+          { userId: 'abcd1234', rating: 4 }
+        ]
+      }
+    ],
+    users: [
+      {
+        id: 'abcd1234',
+        username: 'test-user'
+      },
+      {
+        id: 'user2',
+        username: 'another-user'
+      }
+    ]
+  }).write();
+
+  // Create an app instance
+  app = await createApp(testDbPath);
+});
+
+// Existing tests...
+
+describe('GET /users/:userId/rated-butterflies', () => {
+  it('success - retrieve rated butterflies', async () => {
+    const response = await request(app)
+      .get('/users/abcd1234/rated-butterflies');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([
+      { id: 'butterfly1', name: 'Butterfly One', rating: 5 },
+      { id: 'wxyz9876', name: 'test-butterfly', rating: 4 },
+      { id: 'butterfly2', name: 'Butterfly Two', rating: 4 }
+    ]);
+  });
+
+  it('success - user has no rated butterflies', async () => {
+    const response = await request(app)
+      .get('/users/user2/rated-butterflies');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([]); // Should return an empty array
+  });
+
+  it('error - user not found', async () => {
+    const response = await request(app)
+      .get('/users/nonexistent-user/rated-butterflies');
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({
+      error: 'User not found'
+    });
+  });
+});
+
+// Existing tests...
+
+
+
+describe('PATCH /butterflies/:id/rate', () => {
   beforeEach(async () => {
     // Reset the database to a known state before each test
     await db.setState({
@@ -170,10 +290,7 @@ describe('GET user ratings for butterflies', () => {
           commonName: 'test-butterfly',
           species: 'Testium butterflius',
           article: 'https://example.com/testium_butterflius',
-          ratings: [
-            { userId: 'abcd1234', rating: 4 },
-            { userId: 'user2', rating: 5 }
-          ]
+          ratings: [] // Start with no ratings
         }
       ],
       users: [
@@ -189,53 +306,7 @@ describe('GET user ratings for butterflies', () => {
     }).write();
   });
 
-  it('success - retrieve user ratings', async () => {
-    const response = await request(app)
-      .get('/butterflies/wxyz9876/rate?userId=abcd1234');
-
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({
-      userId: 'abcd1234',
-      ratings: [
-        { butterflyId: 'wxyz9876', rating: 4 }
-      ]
-    });
-  });
-
-  it('error - user has not rated any butterflies', async () => {
-    const response = await request(app)
-      .get('/butterflies/wxyz9876/rate?userId=user2'); // User2 has not rated this butterfly
-
-    expect(response.status).toBe(404);
-    expect(response.body).toEqual({
-      error: 'No ratings found for this user'
-    });
-  });
-
-  it('error - butterfly not found', async () => {
-    const response = await request(app)
-      .get('/butterflies/bad-id/rate?userId=abcd1234');
-
-    expect(response.status).toBe(404);
-    expect(response.body).toEqual({
-      error: 'Butterfly not found'
-    });
-  });
-
-  it('error - user not found', async () => {
-    const response = await request(app)
-      .get('/butterflies/wxyz9876/rate?userId=nonexistent-user');
-
-    expect(response.status).toBe(404);
-    expect(response.body).toEqual({
-      error: 'User not found'
-    });
-  });
-});
-
-
-describe('PATCH butterfly rating', () => {
-  it('success - new rating', async () => {
+  it('success - add new rating', async () => {
     const response = await request(app)
       .patch('/butterflies/wxyz9876/rate')
       .send({
@@ -260,7 +331,7 @@ describe('PATCH butterfly rating', () => {
   });
 
   it('success - update existing rating', async () => {
-    // First, create an initial rating
+    // First, add an initial rating
     await request(app)
       .patch('/butterflies/wxyz9876/rate')
       .send({
@@ -292,7 +363,7 @@ describe('PATCH butterfly rating', () => {
     ]);
   });
 
-  it('error - invalid rating value', async () => {
+  it('error - invalid rating value (too high)', async () => {
     const response = await request(app)
       .patch('/butterflies/wxyz9876/rate')
       .send({
@@ -306,17 +377,17 @@ describe('PATCH butterfly rating', () => {
     });
   });
 
-  it('error - user not found', async () => {
+  it('error - invalid rating value (too low)', async () => {
     const response = await request(app)
       .patch('/butterflies/wxyz9876/rate')
       .send({
-        userId: 'nonexistent-user', // Non-existing user
-        rating: 4
+        userId: 'abcd1234',
+        rating: -1 // Invalid rating (below 0)
       });
 
-    expect(response.status).toBe(404);
+    expect(response.status).toBe(400);
     expect(response.body).toEqual({
-      error: 'Butterfly not found'
+      error: 'Rating must be a number between 0 and 5'
     });
   });
 
@@ -333,7 +404,22 @@ describe('PATCH butterfly rating', () => {
       error: 'Butterfly not found'
     });
   });
+
+  it('error - user not found', async () => {
+    const response = await request(app)
+      .patch('/butterflies/wxyz9876/rate')
+      .send({
+        userId: 'nonexistent-user', // Non-existing user
+        rating: 4
+      });
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({
+      error: 'User not found'
+    });
+  });
 });
+
 
 
 describe('POST user', () => {
