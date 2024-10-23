@@ -234,10 +234,10 @@ describe('GET user ratings for butterflies', () => {
 });
 
 
-describe('PUT butterfly rating', () => {
+describe('PATCH butterfly rating', () => {
   it('success - new rating', async () => {
     const response = await request(app)
-      .put('/butterflies/wxyz9876/rate')
+      .patch('/butterflies/wxyz9876/rate')
       .send({
         userId: 'abcd1234', // Existing user
         rating: 5
@@ -262,7 +262,7 @@ describe('PUT butterfly rating', () => {
   it('success - update existing rating', async () => {
     // First, create an initial rating
     await request(app)
-      .put('/butterflies/wxyz9876/rate')
+      .patch('/butterflies/wxyz9876/rate')
       .send({
         userId: 'abcd1234',
         rating: 3
@@ -270,7 +270,7 @@ describe('PUT butterfly rating', () => {
 
     // Now update the rating
     const response = await request(app)
-      .put('/butterflies/wxyz9876/rate')
+      .patch('/butterflies/wxyz9876/rate')
       .send({
         userId: 'abcd1234',
         rating: 4
@@ -294,7 +294,7 @@ describe('PUT butterfly rating', () => {
 
   it('error - invalid rating value', async () => {
     const response = await request(app)
-      .put('/butterflies/wxyz9876/rate')
+      .patch('/butterflies/wxyz9876/rate')
       .send({
         userId: 'abcd1234',
         rating: 6 // Invalid rating (above 5)
@@ -308,7 +308,7 @@ describe('PUT butterfly rating', () => {
 
   it('error - user not found', async () => {
     const response = await request(app)
-      .put('/butterflies/wxyz9876/rate')
+      .patch('/butterflies/wxyz9876/rate')
       .send({
         userId: 'nonexistent-user', // Non-existing user
         rating: 4
@@ -322,7 +322,7 @@ describe('PUT butterfly rating', () => {
 
   it('error - butterfly not found', async () => {
     const response = await request(app)
-      .put('/butterflies/bad-id/rate')
+      .patch('/butterflies/bad-id/rate')
       .send({
         userId: 'abcd1234',
         rating: 5

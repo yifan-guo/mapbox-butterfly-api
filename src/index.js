@@ -104,10 +104,10 @@ app.get('/users/:userId/rated-butterflies', async (req, res) => {
 
   /**
    * Allow a user to rate butterflies on a scale of 0 through 5
-   * PUT /butterflies/:id/rate
+   * PATCH /butterflies/:id/rate
    * Body: {"userId": string, "rating": number} - Rating must be between 0 - 5
    */
-  app.put('/butterflies/:id/rate', async (req, res) => {
+  app.patch('/butterflies/:id/rate', async (req, res) => {
       const { id } = req.params;
       const {userId, rating } = req.body;
 
