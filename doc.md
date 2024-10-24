@@ -159,8 +159,8 @@ When retrieving a list of a user's rated butterflies, the system needs to traver
 
 Thorough unit tests were created for both new endpoints to ensure they handle various scenarios, including valid and invalid input. Tests also check for existing ratings and confirm that updates occur correctly.
 
+Additionally, curl commands to generate a user rating and get a user's sorted ratings have been added to the README to enhance testing without cluttering the codebase.
+
 # Tidiness and Refactoring
 
 The existing codebase has been maintained with consistent naming conventions and structured comments to improve readability. Functions were modularized where necessary to promote reusability.
-
-Additionally, logging has been added within the rating endpoints to enhance debugging without cluttering the codebase.
