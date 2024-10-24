@@ -1,57 +1,73 @@
 To allows users to rate butterflies on a scale between 0 and 5, I'll need to create a new endpoint. Below is an implementation that includes the Http method, endpoint, parameters, types, and the context for the new endpoint.
 
 Method: PATCH
+
 Endpoint: `/butterflies/:id/rate`
+
 Parameters:
-- id (path parameter): The ID of the butterfly to rate
-    type: string
-- body (request body): An object containing the user's rating
-    - userId: unique ID of the user
-        type: string
-        required: true
-    - rating: A rating between 0 and 5, inclusive
-        type: integer
-        required: true
+```yaml
+id:
+  description: The ID of the butterfly to rate
+  type: string
+body: 
+  description: An object containing the user's rating
+  type: object
+  properties:
+    userId:
+      description: Unique ID of the user
+      type: string
+      required: true
+    rating:
+      description: A rating between 0 and 5, inclusive
+      type: integer
+      required: true
+  required:
+    - userId
+    - rating
+```
 
 Response Codes:
 - 200 OK: If the rating is updated successfully.
 - 201 Created: If a new rating is created.
 - 400 Bad Request: If the request is invalid (e.g., invalid rating value).
-- 404 Not Found: If the specified butterfly does not exist.
+- 404 Not Found: If the specified butterfly (or user) does not exist.
 
 
 # Decisions
 - Each rating is tied to a user
-- To rate a butterfly, the userId is path parameter (therefore it is required) because a rating is tied to a user.
-- The API will only keep each user's latest rating.
 - Each butterfly has a ratings array so it can track ratings from multiple users.
+- To rate a butterfly, the request must provide `userId` as a *path* parameter.
+- The database will only keep each user's latest rating.
 
 # Why update a user's rating instead of creating new one?
-If a user has many ratings, the retrieval operation may take longer. This can lead to increased latency in response times.
+If a user has many ratings, the retrieval operation may take longer because more data has to cross the network and be deserialized. This can lead to increased latency in response times.
 
 # Trade-offs
-Rating Updates: Using an array for ratings facilitates quick retrieval and flexibility but requires additional checks to avoid duplicates. While this approach is simple, it may lead to inefficiencies with larger datasets.
-Data Integrity: By implementing user uniqueness in ratings, we avoid duplicates but add complexity to the update logic.
+- **Rating Updates**: Using an array for ratings facilitates quick retrieval and flexibility but requires additional checks to avoid duplicates. While this approach is simple, it may lead to inefficiencies with larger datasets.
+- **Data Integrity**: By implementing user uniqueness in ratings, we avoid duplicates but add complexity to the update logic.
 
 # Endpoint Design 
 
 ## Why use PATCH to rate butterflies?
-The PATCH method is specifically designed to allow for partial updates to an existing resource. This helps to clarify that we are only modifying the rating rather than replacing the entire butterfly object.
-PATCH is also useful if we're considering future extensibility or clarity in our API design. Specifically, if we want to allow users to provide comments or feedback, `PATCH` would support that without needing to change the method.
+The PATCH method is specifically designed to allow for partial updates to an existing resource. This clarifies that we are only modifying the rating rather than replacing the entire butterfly object. 
 
-`POST` is used when creating a new entire resource. If a user already has a rating, using POST for updating a rating can be misleading since `POST` is typically associated with creating a resource. This could cause confusion, especially if users expect a `POST` request to only create things rather than update them.
-`PUT` is used we want to update an existing resource. Since we are only updating the ratings field, the rest of the object remains unchanged. `PUT` may mislead users into thinking that they are updating other immutable aspects of the butterfly - such as its common name or species.
+PATCH is also useful for future extensibility or clarity in our API design. If we want to allow users to provide comments or feedback, `PATCH` would support that without needing to change the method.
 
-# Handling Multiple ratings
-Update existing rating - If the user has already rated the butterfly, the system should update their existing rating rather than create a new one. This prevents multiple entries for the same user and butterfly.
-- If an existing rating is found, it updates that rating.
-- If no existing rating is found, it creates a new entry.
+- **POST** is used for creating a new resource. If a user already has a rating, using POST for updating can be misleading, as `POST` typically associates with creation. This could confuse users who expect `POST` requests to only create resources.
+  
+- **PUT** is used when updating an existing resource. Since we are only updating the ratings field, the rest of the object remains unchanged. `PUT` may mislead users into thinking they are updating other immutable aspects of the butterfly, such as its common name or species.
 
-To tie each rating to a specific user, I include the user information along with each rating. This way, each entry in the ratings array can contain both the rating and the user ID. 
+# Handling Multiple Ratings
+- **Update Existing Rating**: If the user has already rated the butterfly, the system should update their existing rating rather than create a new one. This prevents multiple entries for the same user and butterfly:
+  - If an existing rating is found, it updates that rating.
+  - If no existing rating is found, it creates a new entry.
+
+To tie each rating to a specific user, I include user information along with each rating. This way, each entry in the ratings array can contain both the rating and the user ID.
 
 # Structure for Ratings
 Instead of just storing ratings as an array of numbers, I decided to store them as an array of objects where each object contains the rating and the user ID. Here's an example:
-```
+
+```json
 "ratings": [
   { "userId": "user123", "rating": 4 },
   { "userId": "user456", "rating": 5 }
@@ -59,31 +75,32 @@ Instead of just storing ratings as an array of numbers, I decided to store them 
 ```
 
 # Benefits
-User privacy: The endpoint respects user privacy by not exposing the ratings from other users.
-Clear Communication: the response clearly communicates the result of the user's action without unnecessary data.
+- **User Privacy**: The endpoint respects user privacy by not exposing ratings from other users.
+- **Clear Communication**: The response clearly communicates the result of the user's action without unnecessary data.
 
 # Summary
-This implementa ensures that when a user rates a butterfly, they only receive information relevant to their action, maintaining the integrity of user privacy. 
+This implementation ensures that when a user rates a butterfly, they only receive information relevant to their action, maintaining the integrity of user privacy.
 
 # Explanation of the Tests
-Success - New Rating: Tests that a new rating can be added successfully.
-Success - Update Existing Rating: Tests that an existing rating can be updated without creating a new entry.
-Error - Invalid Rating Value: Ensures that ratings outside the range (0 to 5) return a validation error.
-Error - User Not Found: Checks that if the user ID does not exist in the database, the endpoint returns an error.
-Error - Butterfly Not Found: Tests that an attempt to rate a non-existing butterfly returns a not-found error.
+- **Success - New Rating**: Tests that a new rating can be added successfully.
+- **Success - Update Existing Rating**: Tests that an existing rating can be updated without creating a new entry.
+- **Error - Invalid Rating Value**: Ensures that ratings outside the range (0 to 5) return a validation error.
+- **Error - User Not Found**: Checks that if the user ID does not exist in the database, the endpoint returns an error.
+- **Error - Butterfly Not Found**: Tests that an attempt to rate a non-existing butterfly returns a not-found error.
 
-METODD: GET
-Endpoint: `/users/:userId/rated-butterflies`
-Parameters:
-- userId (path parameter): The ID of the user who gives the rating
-    type: string
-    required: true
-    
+# Method: GET
+- **Endpoint**: `/users/:userId/rated-butterflies`
+- **Parameters**:
+  - **userId** (path parameter): The ID of the user who gives the rating
+    - **type**: string
+    - **required**: true
+
 User-specific ratings: The mapping process retrieves and includes the rating for the specific user identified by `userId`.
 
 # Example Response
 If a user rated two butterflies, the response might look like this:
-```
+
+```json
 [
   { "id": "butterfly1", "name": "Monarch Butterfly", "rating": 5 },
   { "id": "butterfly2", "name": "Swallowtail Butterfly", "rating": 4 }
@@ -91,27 +108,29 @@ If a user rated two butterflies, the response might look like this:
 ```
 
 # Explanation of the Tests
-Success - Retrieve User Ratings:
 
-This test checks that a valid user can retrieve their rating for a specific butterfly successfully.
-Error - User Has Not Rated Any Butterflies:
+- **Success - Retrieve User Ratings**: 
+  This test checks that a valid user can successfully retrieve their rating for a specific butterfly.
 
-This test verifies that if a user who has not rated the butterfly tries to access their rating, a 404 error is returned with an appropriate message.
-Error - Butterfly Not Found:
+- **Error - User Has Not Rated Any Butterflies**: 
+  This test verifies that if a user who has not rated a butterfly tries to access their rating, a 404 error is returned with an appropriate message.
 
-This checks that if a non-existent butterfly ID is requested, a 404 error is returned.
-Error - User Not Found:
+- **Error - Butterfly Not Found**: 
+  This test checks that if a non-existent butterfly ID is requested, a 404 error is returned.
 
-This ensures that if a user ID does not exist, the endpoint returns a 404 error indicating that the user was not found.
+- **Error - User Not Found**: 
+  This ensures that if a user ID does not exist, the endpoint returns a 404 error indicating that the user was not found.
 
 # Database Design Changes
-To support the new functionality for user ratings, the existing database design can be slightly modified to ensure efficient storage and retrieval of ratings while maintaining data integrity. Here are the key changes and considerations:
-1. Ratings Structure:
-- Each butterfly should have a `ratings` array that contains objects with `userId` and `rating`. This structure allows each butterfly to hold multiple ratings from different users.
-- Ensure that the `ratings` array is initialized for each butterfly and that it handles updates properly.
+
+To support the new functionality for user ratings, the existing database design can be slightly modified to ensure efficient storage and retrieval of ratings while maintaining data integrity. Key changes and considerations include:
+
+1. **Ratings Structure**:
+   - Each butterfly should have a `ratings` array containing objects with `userId` and `rating`. This structure allows each butterfly to hold multiple ratings from different users.
+   - Ensure that the `ratings` array is initialized for each butterfly and properly handles updates.
 
 ## Example Structure
-```
+```json
 {
     "id": "butterfly-id",
     "commonName": "Example Butterfly",
@@ -125,18 +144,23 @@ To support the new functionality for user ratings, the existing database design 
 I've updated some entries in the butterflies.db.json to reflect the new design schema.
 
 ## User Ratings Uniqueness
-To enforce that each user only rates a butterfly once, during rating update, the code checks for existing ratings and updates them instead of creating duplicates.
 
-## Performance considerations
-Depending on the size of the data and the number of ratings, I would consider the performance implications of filtering and sorting operations. In larger dataets, I would consider indexing the `userId` within the `ratings` array, although this would require a more complex database setup than the current flat JSON approach with lowdb. 
+To ensure that each user can only rate a butterfly once, the code checks for existing ratings during the update process and modifies them instead of creating duplicates.
+
+## Performance Considerations
+
+Depending on the size of the data and the number of ratings, it's important to consider the performance implications of filtering and sorting operations. For larger datasets, indexing the `userId` within the `ratings` array may be beneficial, though this would require a more complex database setup than the current flat JSON approach with lowdb.
 
 ## Retrieval of Rated Butterflies
-When retrieving a list of user's rated butterflies, we would need to traverse the `butterflies` collection and filter based on the `userId` in the ratings. This operation can be optimized for performance by considering database choices or structures - like indexing or creating a primary / secondary key - as the app scales.
+
+When retrieving a list of a user's rated butterflies, the system needs to traverse the `butterflies` collection and filter based on the `userId` in the ratings. This operation can be optimized for performance by considering database structures, such as indexing or creating primary/secondary keys, as the application scales.
 
 # Testing
-Thorough unit tests were created for both the new endpoints to ensure that they handle various scenarios, including valid and invalid input. Tests also check for existing ratings and ensure that updates occur correctly.
+
+Thorough unit tests were created for both new endpoints to ensure they handle various scenarios, including valid and invalid input. Tests also check for existing ratings and confirm that updates occur correctly.
 
 # Tidiness and Refactoring
-The existing codebase was maintained with consistent naming conventions and structured comments to improve readability. Functions were modularized where necessary to promote reusability.
 
-The addition of logging within the rating endpoints can enhance debugging without cluttering the codebase.
+The existing codebase has been maintained with consistent naming conventions and structured comments to improve readability. Functions were modularized where necessary to promote reusability.
+
+Additionally, logging has been added within the rating endpoints to enhance debugging without cluttering the codebase.
