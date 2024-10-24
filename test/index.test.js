@@ -27,8 +27,7 @@ beforeAll(async () => {
         species: 'Species One',
         article: 'https://example.com/butterfly1',
         ratings: [
-          { userId: 'abcd1234', rating: 5 },
-          { userId: 'user2', rating: 3 }
+          { userId: 'abcd1234', rating: 5 }
         ]
       },
       {
@@ -190,59 +189,6 @@ describe('GET user', () => {
   });
 });
 
-beforeAll(async () => {
-  // Create a test database
-  const testDbPath = path.join(__dirname, 'test.db.json');
-  db = await lowdb(new FileAsync(testDbPath));  // Assign the db instance
-
-  // Fill the test database with data
-  await db.setState({
-    butterflies: [
-      {
-        id: 'wxyz9876',
-        commonName: 'test-butterfly',
-        species: 'Testium butterflius',
-        article: 'https://example.com/testium_butterflius',
-        ratings: [
-          { userId: 'abcd1234', rating: 4 }
-        ]
-      },
-      {
-        id: 'butterfly1',
-        commonName: 'Butterfly One',
-        species: 'Species One',
-        article: 'https://example.com/butterfly1',
-        ratings: [
-          { userId: 'abcd1234', rating: 5 }
-        ]
-      },
-      {
-        id: 'butterfly2',
-        commonName: 'Butterfly Two',
-        species: 'Species Two',
-        article: 'https://example.com/butterfly2',
-        ratings: [
-          { userId: 'abcd1234', rating: 4 }
-        ]
-      }
-    ],
-    users: [
-      {
-        id: 'abcd1234',
-        username: 'test-user'
-      },
-      {
-        id: 'user2',
-        username: 'another-user'
-      }
-    ]
-  }).write();
-
-  // Create an app instance
-  app = await createApp(testDbPath);
-});
-
-// Existing tests...
 
 describe('GET /users/:userId/rated-butterflies', () => {
   it('success - retrieve rated butterflies', async () => {
@@ -252,8 +198,8 @@ describe('GET /users/:userId/rated-butterflies', () => {
     expect(response.status).toBe(200);
     expect(response.body).toEqual([
       { id: 'butterfly1', name: 'Butterfly One', rating: 5 },
-      { id: 'wxyz9876', name: 'test-butterfly', rating: 4 },
-      { id: 'butterfly2', name: 'Butterfly Two', rating: 4 }
+      { id: 'butterfly2', name: 'Butterfly Two', rating: 4 },
+      { id: 'wxyz9876', name: 'test-butterfly', rating: 4 }
     ]);
   });
 
