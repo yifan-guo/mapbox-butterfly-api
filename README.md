@@ -85,8 +85,14 @@ curl http://localhost:8000/butterflies/H7hhcEWLDsxyHN0cnDrBV
 # POST a new butterfly
 curl -X POST -d '{"commonName":"Brimstone", "species":"Gonepteryx rhamni", "article":"https://en.wikipedia.org/wiki/Gonepteryx_rhamni"}' -H 'content-type: application/json' http://localhost:8000/butterflies
 
+# PATCH a user rating
+curl -X PATCH -d '{"userId":"-9aAFuyNIkpSzRMNux2BQ", "rating":2}' -H 'content-type: application/json' http://localhost:8000/butterflies/H7hhcEWLDsxyHN0cnDrBV/rate
+
 # GET a user
 curl http://localhost:8000/users/-9aAFuyNIkpSzRMNux2BQ
+
+# GET a users ratings
+curl -X GET -H 'content-type: application/json' http://localhost:8000/users/-9aAFuyNIkpSzRMNux2BQ/rated-butterflies
 ```
 
 **For developing**, you can run the application with auto-restarts on code changes using:

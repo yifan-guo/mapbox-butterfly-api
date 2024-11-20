@@ -80,6 +80,84 @@ async function createApp(dbPath) {
   });
 
   /**
+ * Get a list of a user's rated butterflies, sorted by rating
+ * GET /users/:userId/rated-butterflies
+ */
+  app.get('/users/:userId/rated-butterflies', async (req, res) => {
+    const { userId } = req.params;
+
+    const user = await db.get('users').find({ id: userId }).value();
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Retrieve all butterflies
+    const butterflies = await db.get('butterflies').value();
+
+    // Filter and map to get rated butterflies
+    const ratedButterflies = butterflies
+      .map((butterfly) => {
+        const userRating = butterfly.ratings && butterfly.ratings.find((r) => r.userId === userId);
+        return userRating ? { id: butterfly.id, name: butterfly.commonName, rating: userRating.rating } : null;
+      })
+      .filter((butterfly) => butterfly !== null) // Remove null entries
+      .sort((a, b) => b.rating - a.rating); // Sort by rating in descending order
+
+    res.json(ratedButterflies);
+  });
+
+
+  /**
+   * Allow a user to rate butterflies on a scale of 0 through 5
+   * PATCH /butterflies/:id/rate
+   * Body: {"userId": string, "rating": number} - Rating must be between 0 - 5
+   */
+  app.patch('/butterflies/:id/rate', async (req, res) => {
+    const { id } = req.params;
+    const { userId, rating } = req.body;
+
+    // validate the rating
+    if (typeof rating !== 'number' || rating < 0 || rating > 5){
+      return res.status(400).json({ 'error': 'Rating must be a number between 0 and 5' });
+    }
+
+    // find the butterfly in the db
+    const butterfly = await db.get('butterflies').find({ id }).value();
+
+    if (!butterfly) {
+      return res.status(404).json({ error: 'Butterfly not found' });
+    }
+
+    // Check if the user exists
+    const user = await db.get('users').find({ id: userId }).value();
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // initialize butterfly ratings if not present
+    if (!butterfly.ratings) {
+      butterfly.ratings = [];
+    }
+
+    // check if the user already rated the butterfly
+    const existingRatingIndex = butterfly.ratings.findIndex((r) => r.userId === userId);
+    if (existingRatingIndex !== -1) {
+      // update the existing rating
+      butterfly.ratings[existingRatingIndex].rating = rating;
+    } else {
+      // insert the new rating tied to the user ID
+      butterfly.ratings.push({ userId, rating });
+    }
+
+    // update the butterfly in the database
+    await db.get('butterflies').find({ id }).assign(butterfly).write();
+
+    // Respond with the user's rating without exposing other ratings
+    res.json({ message : 'Rating added/updated successfully', rating: { userId, rating } });
+
+  });
+
+  /**
    * Create a new user
    * POST
    */
